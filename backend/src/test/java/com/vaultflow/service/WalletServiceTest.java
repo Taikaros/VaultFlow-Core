@@ -20,12 +20,14 @@ class WalletServiceTest {
 
     @Mock
     private WalletRepository walletRepository;
+    @Mock
+    private CurrencyConverter currencyConverter;
 
     private WalletService walletService;
 
     @BeforeEach
     void setUp() {
-        walletService = new WalletService(walletRepository);
+        walletService = new WalletService(walletRepository, currencyConverter);
     }
 
     @Test
@@ -75,6 +77,7 @@ class WalletServiceTest {
 
     @Test
     void create_shouldCreateWalletWithDefaultValues() {
+        when(currencyConverter.isSupported("USD")).thenReturn(true);
         when(walletRepository.save(any(Wallet.class))).thenAnswer(i -> {
             Wallet w = i.getArgument(0);
             w.setId("new-wallet");
@@ -90,6 +93,7 @@ class WalletServiceTest {
 
     @Test
     void create_shouldCreateWalletWithCustomCurrency() {
+        when(currencyConverter.isSupported("EUR")).thenReturn(true);
         when(walletRepository.save(any(Wallet.class))).thenAnswer(i -> {
             Wallet w = i.getArgument(0);
             w.setId("new-wallet");

@@ -27,6 +27,15 @@ public class Transaction {
     @Column(nullable = false)
     private String status = "PENDING";
 
+    @Column(name = "original_amount")
+    private Double originalAmount;
+
+    @Column(name = "original_currency")
+    private String originalCurrency;
+
+    @Column(name = "conversion_rate")
+    private Double conversionRate;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -49,5 +58,11 @@ public class Transaction {
     public void setType(String type) { this.type = type; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public Double getOriginalAmount() { return originalAmount; }
+    public void setOriginalAmount(Double originalAmount) { this.originalAmount = originalAmount; }
+    public String getOriginalCurrency() { return originalCurrency; }
+    public void setOriginalCurrency(String originalCurrency) { this.originalCurrency = originalCurrency; }
+    public Double getConversionRate() { return conversionRate; }
+    public void setConversionRate(Double conversionRate) { this.conversionRate = conversionRate; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

@@ -47,6 +47,16 @@ export default function CardsPage() {
   const [limit, setLimit] = useState("");
   const [selectedWallet, setSelectedWallet] = useState("");
   const [open, setOpen] = useState(false);
+  const [walletOpen, setWalletOpen] = useState(false);
+  const [newWalletCurrency, setNewWalletCurrency] = useState("USD");
+
+  const handleCreateWallet = async () => {
+    if (!auth) return;
+    await api.wallets.create(auth.token, newWalletCurrency);
+    setWalletOpen(false);
+    setNewWalletCurrency("USD");
+    load();
+  };
 
   const load = () => {
     if (!auth) return;
@@ -78,42 +88,70 @@ export default function CardsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Tarjetas</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger>
-            <Button>Emitir tarjeta</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nueva tarjeta</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Wallet destino</label>
-                <select
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  value={selectedWallet}
-                  onChange={(e) => setSelectedWallet(e.target.value)}
-                >
-                  <option value="">Seleccionar wallet</option>
-                  {wallets.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.id.slice(0, 8)}... (${w.balance})
-                    </option>
-                  ))}
-                </select>
+        <div className="flex gap-2">
+          <Dialog open={walletOpen} onOpenChange={setWalletOpen}>
+            <DialogTrigger>
+              <Button variant="outline">Nueva wallet</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Crear wallet</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Moneda</label>
+                  <select className="w-full border rounded-md px-3 py-2 text-sm" value={newWalletCurrency} onChange={(e) => setNewWalletCurrency(e.target.value)}>
+                    <option value="USD">USD - Dólar</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="ARS">ARS - Peso argentino</option>
+                    <option value="BRL">BRL - Real brasileño</option>
+                    <option value="MXN">MXN - Peso mexicano</option>
+                    <option value="COP">COP - Peso colombiano</option>
+                    <option value="CLP">CLP - Peso chileno</option>
+                    <option value="PEN">PEN - Sol peruano</option>
+                  </select>
+                </div>
+                <Button onClick={handleCreateWallet} className="w-full">Crear</Button>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Nombre del titular</label>
-                <Input value={holderName} onChange={(e) => setHolderName(e.target.value)} />
+            </DialogContent>
+          </Dialog>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger>
+              <Button>Emitir tarjeta</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Nueva tarjeta</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Wallet destino</label>
+                  <select
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    value={selectedWallet}
+                    onChange={(e) => setSelectedWallet(e.target.value)}
+                  >
+                    <option value="">Seleccionar wallet</option>
+                    {wallets.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.id.slice(0, 8)}... ({w.currency} ${w.balance.toFixed(2)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Nombre del titular</label>
+                  <Input value={holderName} onChange={(e) => setHolderName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Límite (opcional)</label>
+                  <Input type="number" value={limit} onChange={(e) => setLimit(e.target.value)} />
+                </div>
+                <Button onClick={handleCreate} className="w-full">Crear</Button>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Límite (opcional)</label>
-                <Input type="number" value={limit} onChange={(e) => setLimit(e.target.value)} />
-              </div>
-              <Button onClick={handleCreate} className="w-full">Crear</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -156,7 +194,7 @@ export default function CardsPage() {
               {cards.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-gray-500">
-                    No hay tarjetas todavía
+                    No hay tarjetas todavia
                   </TableCell>
                 </TableRow>
               )}

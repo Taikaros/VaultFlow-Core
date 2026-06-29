@@ -31,6 +31,8 @@ class TransactionServiceTest {
     private WalletRepository walletRepository;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private CurrencyConverter currencyConverter;
 
     @Captor
     private ArgumentCaptor<Transaction> transactionCaptor;
@@ -39,7 +41,7 @@ class TransactionServiceTest {
 
     @BeforeEach
     void setUp() {
-        transactionService = new TransactionService(transactionRepository, cardRepository, walletRepository, notificationService);
+        transactionService = new TransactionService(transactionRepository, cardRepository, walletRepository, notificationService, currencyConverter);
     }
 
     @Test
@@ -59,6 +61,7 @@ class TransactionServiceTest {
         toWallet.setId("w2");
         toWallet.setBalance(100.0);
 
+        when(currencyConverter.convert(200.0, "USD", "USD")).thenReturn(200.0);
         when(cardRepository.findById("card1")).thenReturn(Optional.of(card));
         when(walletRepository.findById("w1")).thenReturn(Optional.of(fromWallet));
         when(walletRepository.findById("w2")).thenReturn(Optional.of(toWallet));
@@ -107,6 +110,7 @@ class TransactionServiceTest {
         toWallet.setId("w2");
         toWallet.setBalance(0.0);
 
+        when(currencyConverter.convert(100.0, "USD", "USD")).thenReturn(100.0);
         when(cardRepository.findById("card1")).thenReturn(Optional.of(card));
         when(walletRepository.findById("w1")).thenReturn(Optional.of(fromWallet));
         when(walletRepository.findById("w2")).thenReturn(Optional.of(toWallet));
@@ -132,6 +136,7 @@ class TransactionServiceTest {
         toWallet.setId("w2");
         toWallet.setBalance(0.0);
 
+        when(currencyConverter.convert(50.0, "USD", "USD")).thenReturn(50.0);
         when(cardRepository.findById("card1")).thenReturn(Optional.of(card));
         when(walletRepository.findById("w1")).thenReturn(Optional.of(fromWallet));
         when(walletRepository.findById("w2")).thenReturn(Optional.of(toWallet));

@@ -12,9 +12,11 @@ import java.util.List;
 public class WalletService {
 
     private final WalletRepository walletRepository;
+    private final CurrencyConverter currencyConverter;
 
-    public WalletService(WalletRepository walletRepository) {
+    public WalletService(WalletRepository walletRepository, CurrencyConverter currencyConverter) {
         this.walletRepository = walletRepository;
+        this.currencyConverter = currencyConverter;
     }
 
     public List<WalletResponse> listByCompany(String companyId) {
@@ -32,9 +34,13 @@ public class WalletService {
 
     @Transactional
     public WalletResponse create(String companyId, String currency) {
+        String cur = currency != null ? currency.toUpperCase() : "USD";
+        if (!currencyConverter.isSupported(cur)) {
+            throw new IllegalArgumentException("Moneda no soportada: " + cur);
+        }
         Wallet wallet = new Wallet();
         wallet.setCompanyId(companyId);
-        if (currency != null) wallet.setCurrency(currency);
+        wallet.setCurrency(cur);
         wallet.setBalance(0.0);
         wallet = walletRepository.save(wallet);
         return WalletResponse.from(wallet);
