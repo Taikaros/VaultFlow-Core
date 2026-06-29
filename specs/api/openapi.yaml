@@ -1,0 +1,521 @@
+openapi: 3.1.0
+info:
+  title: VaultFlow-Core API
+  description: |
+    API corporativa para la gestión de tarjetas digitales, wallets y pagos
+    entre empleados y equipos dentro de una empresa.
+  version: 0.1.0
+  contact:
+    name: VaultFlow Team
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Desarrollo local
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: Solicitud inválida
+        details:
+          type: string
+
+    Company:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        taxId:
+          type: string
+        email:
+          type: string
+          format: email
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CompanyCreateRequest:
+      type: object
+      required: [name, taxId, email, password]
+      properties:
+        name:
+          type: string
+        taxId:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        company:
+          $ref: '#/components/schemas/Company'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+          enum: [ADMIN, EMPLOYEE]
+        walletId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    Wallet:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        balance:
+          type: number
+          format: double
+          minimum: 0
+        currency:
+          type: string
+          default: USD
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Card:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        walletId:
+          type: string
+          format: uuid
+        cardNumber:
+          type: string
+          description: Últimos 4 dígitos
+        holderName:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, SUSPENDED, CANCELLED]
+        limitAmount:
+          type: number
+          format: double
+        spentAmount:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+
+    CardCreateRequest:
+      type: object
+      required: [holderName]
+      properties:
+        holderName:
+          type: string
+        limitAmount:
+          type: number
+          format: double
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fromCardId:
+          type: string
+          format: uuid
+        toWalletId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        description:
+          type: string
+        type:
+          type: string
+          enum: [PAYMENT, TOPUP, REFUND]
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED]
+        createdAt:
+          type: string
+          format: date-time
+
+    TransactionRequest:
+      type: object
+      required: [fromCardId, toWalletId, amount]
+      properties:
+        fromCardId:
+          type: string
+          format: uuid
+        toWalletId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+        description:
+          type: string
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registrar una nueva empresa
+      operationId: registerCompany
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyCreateRequest'
+      responses:
+        '201':
+          description: Empresa registrada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /wallets:
+    get:
+      tags: [Wallets]
+      summary: Listar wallets de la empresa
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de wallets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Wallet'
+
+    post:
+      tags: [Wallets]
+      summary: Crear una wallet
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currency:
+                  type: string
+                  default: USD
+      responses:
+        '201':
+          description: Wallet creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+
+  /wallets/{walletId}:
+    get:
+      tags: [Wallets]
+      summary: Obtener wallet por ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Wallet encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '404':
+          description: Wallet no encontrada
+
+  /wallets/{walletId}/transactions:
+    get:
+      tags: [Wallets]
+      summary: Historial de transacciones de una wallet
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de transacciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+
+  /cards:
+    get:
+      tags: [Cards]
+      summary: Listar tarjetas (por wallet opcional)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: walletId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de tarjetas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Card'
+
+  /wallets/{walletId}/cards:
+    post:
+      tags: [Cards]
+      summary: Emitir nueva tarjeta en una wallet
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardCreateRequest'
+      responses:
+        '201':
+          description: Tarjeta emitida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Card'
+
+  /cards/{cardId}:
+    get:
+      tags: [Cards]
+      summary: Obtener detalles de tarjeta
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tarjeta encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Card'
+
+    patch:
+      tags: [Cards]
+      summary: Actualizar estado o límite de tarjeta
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [ACTIVE, SUSPENDED, CANCELLED]
+                limitAmount:
+                  type: number
+                  format: double
+      responses:
+        '200':
+          description: Tarjeta actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Card'
+
+    delete:
+      tags: [Cards]
+      summary: Cancelar una tarjeta
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Tarjeta cancelada
+
+  /transactions:
+    post:
+      tags: [Transactions]
+      summary: Realizar un pago
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '201':
+          description: Transacción creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Fondos insuficientes o límite excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags: [Transactions]
+      summary: Listar transacciones (global)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, COMPLETED, FAILED]
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Lista de transacciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
