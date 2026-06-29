@@ -29,6 +29,8 @@ class TransactionServiceTest {
     private CardRepository cardRepository;
     @Mock
     private WalletRepository walletRepository;
+    @Mock
+    private NotificationService notificationService;
 
     @Captor
     private ArgumentCaptor<Transaction> transactionCaptor;
@@ -37,7 +39,7 @@ class TransactionServiceTest {
 
     @BeforeEach
     void setUp() {
-        transactionService = new TransactionService(transactionRepository, cardRepository, walletRepository);
+        transactionService = new TransactionService(transactionRepository, cardRepository, walletRepository, notificationService);
     }
 
     @Test

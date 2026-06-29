@@ -113,7 +113,8 @@ class TransactionControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/transactions")
                 .header("Authorization", "Bearer " + token))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(1)));
+            .andExpect(jsonPath("$.content", hasSize(1)))
+            .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     private String createWallet() throws Exception {
