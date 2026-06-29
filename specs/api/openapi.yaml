@@ -4,9 +4,10 @@ info:
   description: |
     API corporativa para la gestión de tarjetas digitales, wallets y pagos
     entre empleados y equipos dentro de una empresa.
-  version: 0.1.0
+  version: 1.1.0
   contact:
     name: VaultFlow Team
+
 servers:
   - url: http://localhost:8080/api/v1
     description: Desarrollo local
@@ -31,6 +32,32 @@ components:
           example: Solicitud inválida
         details:
           type: string
+
+    Pageable:
+      type: object
+      properties:
+        page:
+          type: integer
+          default: 0
+          minimum: 0
+        size:
+          type: integer
+          default: 20
+          minimum: 1
+          maximum: 100
+
+    PageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        number:
+          type: integer
+      description: Respuesta paginada estándar
 
     Company:
       type: object
@@ -96,6 +123,38 @@ components:
           type: string
           format: date-time
 
+    UserCreateRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        role:
+          type: string
+          enum: [ADMIN, EMPLOYEE]
+          default: EMPLOYEE
+        walletId:
+          type: string
+          format: uuid
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+          enum: [ADMIN, EMPLOYEE]
+        walletId:
+          type: string
+          format: uuid
+
     Wallet:
       type: object
       properties:
@@ -156,6 +215,16 @@ components:
           type: number
           format: double
 
+    CardUpdateRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ACTIVE, SUSPENDED, CANCELLED]
+        limitAmount:
+          type: number
+          format: double
+
     Transaction:
       type: object
       properties:
@@ -200,12 +269,35 @@ components:
         description:
           type: string
 
+    DashboardMetrics:
+      type: object
+      properties:
+        totalBalance:
+          type: number
+          format: double
+        walletCount:
+          type: integer
+        activeCards:
+          type: integer
+        totalCards:
+          type: integer
+        completedTransactions:
+          type: integer
+        failedTransactions:
+          type: integer
+        totalTransactions:
+          type: integer
+
+security:
+  - BearerAuth: []
+
 paths:
   /auth/register:
     post:
       tags: [Auth]
       summary: Registrar una nueva empresa
       operationId: registerCompany
+      security: []
       requestBody:
         required: true
         content:
@@ -231,6 +323,7 @@ paths:
       tags: [Auth]
       summary: Iniciar sesión
       operationId: login
+      security: []
       requestBody:
         required: true
         content:
@@ -259,10 +352,26 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /dashboard/metrics:
+    get:
+      tags: [Dashboard]
+      summary: Obtener métricas agregadas del dashboard
+      operationId: getDashboardMetrics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Métricas del dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardMetrics'
+
   /wallets:
     get:
       tags: [Wallets]
       summary: Listar wallets de la empresa
+      operationId: listWallets
       security:
         - BearerAuth: []
       responses:
@@ -278,6 +387,7 @@ paths:
     post:
       tags: [Wallets]
       summary: Crear una wallet
+      operationId: createWallet
       security:
         - BearerAuth: []
       requestBody:
@@ -302,6 +412,7 @@ paths:
     get:
       tags: [Wallets]
       summary: Obtener wallet por ID
+      operationId: getWalletById
       security:
         - BearerAuth: []
       parameters:
@@ -324,7 +435,8 @@ paths:
   /wallets/{walletId}/transactions:
     get:
       tags: [Wallets]
-      summary: Historial de transacciones de una wallet
+      summary: Historial de transacciones de una wallet (paginado)
+      operationId: listWalletTransactions
       security:
         - BearerAuth: []
       parameters:
@@ -334,20 +446,49 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
       responses:
         '200':
-          description: Lista de transacciones
+          description: Página de transacciones
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Transaction'
+                allOf:
+                  - $ref: '#/components/schemas/PageResponse'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Transaction'
 
   /cards:
     get:
       tags: [Cards]
       summary: Listar tarjetas (por wallet opcional)
+      operationId: listCards
       security:
         - BearerAuth: []
       parameters:
@@ -370,6 +511,7 @@ paths:
     post:
       tags: [Cards]
       summary: Emitir nueva tarjeta en una wallet
+      operationId: createCard
       security:
         - BearerAuth: []
       parameters:
@@ -397,6 +539,7 @@ paths:
     get:
       tags: [Cards]
       summary: Obtener detalles de tarjeta
+      operationId: getCardById
       security:
         - BearerAuth: []
       parameters:
@@ -417,6 +560,7 @@ paths:
     patch:
       tags: [Cards]
       summary: Actualizar estado o límite de tarjeta
+      operationId: updateCard
       security:
         - BearerAuth: []
       parameters:
@@ -431,14 +575,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                status:
-                  type: string
-                  enum: [ACTIVE, SUSPENDED, CANCELLED]
-                limitAmount:
-                  type: number
-                  format: double
+              $ref: '#/components/schemas/CardUpdateRequest'
       responses:
         '200':
           description: Tarjeta actualizada
@@ -450,6 +587,7 @@ paths:
     delete:
       tags: [Cards]
       summary: Cancelar una tarjeta
+      operationId: deleteCard
       security:
         - BearerAuth: []
       parameters:
@@ -467,6 +605,7 @@ paths:
     post:
       tags: [Transactions]
       summary: Realizar un pago
+      operationId: pay
       security:
         - BearerAuth: []
       requestBody:
@@ -491,10 +630,24 @@ paths:
 
     get:
       tags: [Transactions]
-      summary: Listar transacciones (global)
+      summary: Listar transacciones global (paginado)
+      operationId: listTransactions
       security:
         - BearerAuth: []
       parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
         - name: status
           in: query
           schema:
@@ -512,10 +665,149 @@ paths:
             format: date-time
       responses:
         '200':
-          description: Lista de transacciones
+          description: Página de transacciones
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Transaction'
+                allOf:
+                  - $ref: '#/components/schemas/PageResponse'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Transaction'
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Listar usuarios de la empresa (paginado)
+      operationId: listUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Página de usuarios
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageResponse'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+
+    post:
+      tags: [Users]
+      summary: Crear un usuario en la empresa
+      operationId: createUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{userId}:
+    get:
+      tags: [Users]
+      summary: Obtener usuario por ID
+      operationId: getUserById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Usuario no encontrado
+
+    patch:
+      tags: [Users]
+      summary: Actualizar nombre, rol o wallet de un usuario
+      operationId: updateUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: Usuario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Usuario no encontrado
+
+    delete:
+      tags: [Users]
+      summary: Eliminar un usuario
+      operationId: deleteUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Usuario eliminado
+        '404':
+          description: Usuario no encontrado
