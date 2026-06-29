@@ -58,15 +58,20 @@ export default function TransactionsPage() {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [open, setOpen] = useState(false);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   const load = () => {
     if (!auth) return;
-    api.transactions.list(auth.token).then(setTransactions);
+    api.transactions.list(auth.token, page).then((res) => {
+      setTransactions(res.content);
+      setTotalPages(res.totalPages);
+    });
     api.cards.list(auth.token).then(setCards);
     api.wallets.list(auth.token).then(setWallets);
   };
 
-  useEffect(() => { load(); }, [auth]);
+  useEffect(() => { load(); }, [auth, page]);
 
   const handlePay = async () => {
     if (!auth) return;
@@ -181,6 +186,13 @@ export default function TransactionsPage() {
               )}
             </TableBody>
           </Table>
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-4">
+              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>Anterior</Button>
+              <span className="text-sm self-center">Página {page + 1} de {totalPages}</span>
+              <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>Siguiente</Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -4,12 +4,14 @@ import com.vaultflow.dto.TransactionRequest;
 import com.vaultflow.model.Transaction;
 import com.vaultflow.service.TransactionService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -28,15 +30,20 @@ public class TransactionController {
     }
 
     @GetMapping("/transactions")
-    public ResponseEntity<List<Transaction>> list(
+    public ResponseEntity<Page<Transaction>> list(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) LocalDateTime from,
-            @RequestParam(required = false) LocalDateTime to) {
-        return ResponseEntity.ok(transactionService.listAll(status, from, to));
+            @RequestParam(required = false) LocalDateTime to,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(transactionService.listAll(status, from, to, pageable));
     }
 
     @GetMapping("/wallets/{walletId}/transactions")
-    public ResponseEntity<List<Transaction>> listByWallet(@PathVariable String walletId) {
-        return ResponseEntity.ok(transactionService.listByWallet(walletId));
+    public ResponseEntity<Page<Transaction>> listByWallet(
+            @PathVariable String walletId,
+            @RequestParam(required = false) LocalDateTime from,
+            @RequestParam(required = false) LocalDateTime to,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(transactionService.listByWallet(walletId, from, to, pageable));
     }
 }

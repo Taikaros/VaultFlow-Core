@@ -7,11 +7,13 @@ import com.vaultflow.model.Wallet;
 import com.vaultflow.repository.CardRepository;
 import com.vaultflow.repository.TransactionRepository;
 import com.vaultflow.repository.WalletRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Map;
 
 @Service
 public class TransactionService {
@@ -19,27 +21,33 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final CardRepository cardRepository;
     private final WalletRepository walletRepository;
+    private final NotificationService notificationService;
 
     public TransactionService(TransactionRepository transactionRepository,
                               CardRepository cardRepository,
-                              WalletRepository walletRepository) {
+                              WalletRepository walletRepository,
+                              NotificationService notificationService) {
         this.transactionRepository = transactionRepository;
         this.cardRepository = cardRepository;
         this.walletRepository = walletRepository;
+        this.notificationService = notificationService;
     }
 
-    public List<Transaction> listByWallet(String walletId) {
-        return transactionRepository.findByToWalletId(walletId);
-    }
-
-    public List<Transaction> listAll(String status, LocalDateTime from, LocalDateTime to) {
+    public Page<Transaction> listAll(String status, LocalDateTime from, LocalDateTime to, Pageable pageable) {
         if (status != null) {
-            return transactionRepository.findByStatus(status);
+            return transactionRepository.findByStatus(status, pageable);
         }
         if (from != null && to != null) {
-            return transactionRepository.findByCreatedAtBetween(from, to);
+            return transactionRepository.findByCreatedAtBetween(from, to, pageable);
         }
-        return transactionRepository.findAll();
+        return transactionRepository.findAll(pageable);
+    }
+
+    public Page<Transaction> listByWallet(String walletId, LocalDateTime from, LocalDateTime to, Pageable pageable) {
+        if (from != null && to != null) {
+            return transactionRepository.findByToWalletIdAndCreatedAtBetween(walletId, from, to, pageable);
+        }
+        return transactionRepository.findByToWalletId(walletId, pageable);
     }
 
     @Transactional
@@ -82,6 +90,15 @@ public class TransactionService {
             walletRepository.save(toWallet);
             cardRepository.save(card);
             transaction.setStatus("COMPLETED");
+
+            if (toWallet.getCompanyId() != null) {
+                notificationService.sendTransactionNotification(
+                    toWallet.getCompanyId(),
+                    "PAYMENT_RECEIVED",
+                    "Pago recibido: $" + request.amount(),
+                    java.util.Map.of("transactionId", transaction.getId(), "amount", request.amount())
+                );
+            }
         } catch (Exception e) {
             transaction.setStatus("FAILED");
         }
