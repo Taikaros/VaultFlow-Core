@@ -8,7 +8,8 @@
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.5-6DB33F?style=flat&logo=spring&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Release](https://img.shields.io/github/v/tag/Taikaros/VaultFlow-Core?style=flat&logo=github&label=version)](https://github.com/Taikaros/VaultFlow-Core/releases)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue?style=flat)](VERSION)
+[![Release](https://img.shields.io/github/v/tag/Taikaros/VaultFlow-Core?style=flat&logo=github&label=tag)](https://github.com/Taikaros/VaultFlow-Core/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/Taikaros/VaultFlow-Core/ci.yml?branch=main&style=flat&logo=githubactions&label=CI)](https://github.com/Taikaros/VaultFlow-Core/actions)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat)](LICENSE)
 
@@ -168,10 +169,14 @@ git push origin feature/mi-feature
 
 # 2. Una vez aprobado el release:
 git checkout main
-git tag v1.2.0 -m "Descripción del release"
+git merge develop
+git tag -a v1.2.0 -m "Release v1.2.0 - Breve descripción de cambios"
 git push origin v1.2.0
 # → CI automático: build, release, y deploy avanza solo
 ```
+
+> **Nota:** Usamos **annotated tags** (`git tag -a`) en lugar de lightweight tags. Los annotated tags incluyen metadata del autor, fecha y mensaje, y soportan verificación GPG.
+> Ver [CONTRIBUTING.md](CONTRIBUTING.md) para más detalles.
 
 ---
 
@@ -217,14 +222,16 @@ git checkout develop
 # Asegurar que develop está listo (features mergeadas, tests verdes)
 ```
 
-### 2. Taggear
+### 2. Taggear (annotated tag)
 
 ```bash
 git checkout main
-git merge develop         # Merge final a main
-git tag v1.2.0 -m "Breve descripción de cambios"
+git merge develop              # Merge final a main
+git tag -a v1.2.0 -m "Release v1.2.0 - Breve descripción de cambios"
 git push origin v1.2.0
 ```
+
+> Los annotated tags (`-a`) incluyen autor, fecha y mensaje. Son requeridos para releases oficiales.
 
 ### 3. Automatizado por CI
 
@@ -332,6 +339,16 @@ Parámetros `?page=0&size=20`. La respuesta incluye:
 - Documentación OpenAPI con Swagger UI
 - Docker multi-stage para backend y frontend
 - Docker Compose para desarrollo local
+
+---
+
+## 🤝 Contribuir
+
+Ver [CONTRIBUTING.md](CONTRIBUTING.md) para:
+- Convención de commits (Conventional Commits)
+- Flujo de versionado (SemVer)
+- Proceso de release
+- Políticas de ramas y PRs
 
 ---
 
