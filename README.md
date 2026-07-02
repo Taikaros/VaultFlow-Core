@@ -8,9 +8,11 @@
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.5-6DB33F?style=flat&logo=spring&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Release](https://img.shields.io/github/v/tag/Taikaros/VaultFlow-Core?style=flat&logo=github&label=version)](https://github.com/Taikaros/VaultFlow-Core/releases)
+[![Version](https://img.shields.io/badge/version-1.1.1-blue?style=flat)](VERSION)
+[![Release](https://img.shields.io/github/v/tag/Taikaros/VaultFlow-Core?style=flat&logo=github&label=tag)](https://github.com/Taikaros/VaultFlow-Core/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/Taikaros/VaultFlow-Core/ci.yml?branch=main&style=flat&logo=githubactions&label=CI)](https://github.com/Taikaros/VaultFlow-Core/actions)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat)](LICENSE)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow?style=flat)](CONTRIBUTING.md)
 
 </div>
 
@@ -46,7 +48,7 @@ VaultFlow-Core/
 │   │   ├── repository/             # JPA repositories
 │   │   ├── security/               # JwtTokenProvider, JwtAuthenticationFilter
 │   │   └── service/                # Auth, Wallet, Card, Transaction, User, Notification
-│   ├── src/test/                   # 25 tests unitarios + 15 de integración
+│   ├── src/test/                   # 40 tests: 25 unit + 15 integración
 │   ├── Dockerfile
 │   └── pom.xml
 ├── frontend/                       # Dashboard web (Next.js 14)
@@ -60,10 +62,20 @@ VaultFlow-Core/
 │   ├── Dockerfile
 │   └── package.json
 ├── specs/
-│   ├── api/openapi.yaml            # Contrato OpenAPI 3.1
+│   ├── api/openapi.yaml            # Contrato OpenAPI 3.1 (v1.1.0)
 │   ├── database/schema.sql         # DDL SQLite
 │   └── flows/                      # Diagramas de flujo (Mermaid)
+├── scripts/                        # Utilidades
+│   └── bump-version.sh             # Script de bump de versión
+├── VERSION                         # Single source of truth de versión
+├── CHANGELOG.md                    # Historial de cambios
+├── CONTRIBUTING.md                 # Guía de contribución
+├── commitlint.config.js            # Validación de Conventional Commits
+├── .versionrc.js                   # Configuración de standard-version
+├── .husky/                         # Git hooks (commit-msg)
+├── package.json                    # Tooling compartido (raíz)
 ├── docker-compose.yml
+├── LICENSE                         # Licencia MIT
 └── .github/workflows/ci.yml        # Pipeline CI/CD
 ```
 
@@ -81,7 +93,7 @@ VaultFlow-Core/
 
 ```bash
 cd backend
-./mvnw spring-boot:run
+mvn spring-boot:run
 ```
 
 La API arranca en `http://localhost:8080`.  
@@ -105,7 +117,7 @@ docker compose up --build
 
 ### Seed data
 
-Al iniciar con SQLite, si la tabla `companies` está vacía se ejecuta `db/seed.sql`:
+Al iniciar con SQLite, si la tabla `companies` está vacía se ejecuta `backend/src/main/resources/db/seed.sql`:
 
 | Campo | Valor |
 |-------|-------|
@@ -168,10 +180,14 @@ git push origin feature/mi-feature
 
 # 2. Una vez aprobado el release:
 git checkout main
-git tag v1.2.0 -m "Descripción del release"
+git merge develop
+git tag -a v1.2.0 -m "Release v1.2.0 - Breve descripción de cambios"
 git push origin v1.2.0
 # → CI automático: build, release, y deploy avanza solo
 ```
+
+> **Nota:** Usamos **annotated tags** (`git tag -a`) en lugar de lightweight tags. Los annotated tags incluyen metadata del autor, fecha y mensaje, y soportan verificación GPG.
+> Ver [CONTRIBUTING.md](CONTRIBUTING.md) para más detalles.
 
 ---
 
@@ -183,8 +199,10 @@ El pipeline se define en `.github/workflows/ci.yml` y reacciona a diferentes eve
 |--------|--------|
 | PR a `main` o `develop` | Ejecuta tests (backend + frontend) |
 | Push a `develop` | Ejecuta tests |
-| Push de tag `v*` | Build JAR + frontend, crea GitHub Release, avanza rama `deploy` |
-| Push de tag `v*` + secrets Docker configurados | También publica imágenes en Docker Hub |
+| Push de tag `v*` (stable) | Build JAR + frontend, crea GitHub Release, avanza rama `deploy` |
+| Push de tag `v*` (stable) + secrets Docker configurados | Publica imágenes Docker (`:latest` + `:version`) |
+| Push de tag `v*-*` (pre-release) | Build + Release marcado como prerelease |
+| Push de tag `v*-*` (pre-release) + secrets Docker | Publica imágenes Docker solo con tag `:version` (sin `:latest`) |
 
 ### Jobs
 
@@ -217,14 +235,16 @@ git checkout develop
 # Asegurar que develop está listo (features mergeadas, tests verdes)
 ```
 
-### 2. Taggear
+### 2. Taggear (annotated tag)
 
 ```bash
 git checkout main
-git merge develop         # Merge final a main
-git tag v1.2.0 -m "Breve descripción de cambios"
+git merge develop              # Merge final a main
+git tag -a v1.2.0 -m "Release v1.2.0 - Breve descripción de cambios"
 git push origin v1.2.0
 ```
+
+> Los annotated tags (`-a`) incluyen autor, fecha y mensaje. Son requeridos para releases oficiales.
 
 ### 3. Automatizado por CI
 
@@ -271,12 +291,14 @@ Authorization: Bearer <token>
 | GET | `/api/v1/wallets/{id}` | Detalle wallet |
 | GET | `/api/v1/wallets/{id}/transactions` | Transacciones por wallet (paginado) |
 | GET | `/api/v1/cards` | Listar tarjetas (`?walletId=`) |
+| GET | `/api/v1/cards/{cardId}` | Detalle de tarjeta |
 | POST | `/api/v1/wallets/{id}/cards` | Emitir tarjeta |
 | PATCH | `/api/v1/cards/{id}` | Actualizar tarjeta |
 | DELETE | `/api/v1/cards/{id}` | Cancelar tarjeta |
 | POST | `/api/v1/transactions` | Ejecutar pago |
 | GET | `/api/v1/transactions` | Listar transacciones (paginado, `?status=&from=&to=`) |
 | GET | `/api/v1/users` | Listar usuarios (paginado) |
+| GET | `/api/v1/users/{userId}` | Detalle de usuario |
 | POST | `/api/v1/users` | Crear usuario |
 | PATCH | `/api/v1/users/{id}` | Actualizar usuario |
 | DELETE | `/api/v1/users/{id}` | Eliminar usuario |
@@ -307,6 +329,18 @@ Parámetros `?page=0&size=20`. La respuesta incluye:
 
 ## 📋 Changelog
 
+> Ver [CHANGELOG.md](CHANGELOG.md) para el historial completo.
+
+### v1.1.1 (2026-07-02)
+
+- Sistema de versionado con single source of truth (VERSION + bump script)
+- Conventional Commits validados automáticamente (commitlint + husky)
+- standard-version para bumps automáticos de versión
+- Pre-release support (alpha, beta, rc) en CI/CD
+- Annotated tags para releases
+- CONTRIBUTING.md con guía completa de contribución
+- Version drift corregido: pom.xml y package.json sincronizados
+
 ### v1.1.0 (2026-06-29)
 
 - Roles de usuario (ADMIN/EMPLOYEE) con CRUD completo desde el frontend
@@ -335,12 +369,22 @@ Parámetros `?page=0&size=20`. La respuesta incluye:
 
 ---
 
+## 🤝 Contribuir
+
+Ver [CONTRIBUTING.md](CONTRIBUTING.md) para:
+- Convención de commits (Conventional Commits)
+- Flujo de versionado (SemVer)
+- Proceso de release
+- Políticas de ramas y PRs
+
+---
+
 ## 🧪 Pruebas
 
 ```bash
 # Backend — 40 tests (25 unit + 15 integración)
 cd backend
-./mvnw test
+mvn test
 
 # Frontend — lint + build
 cd frontend

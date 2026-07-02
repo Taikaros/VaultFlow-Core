@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.1.1 (2026-07-02)
+
+### 🏗️ Infraestructura
+- Sistema de versionado con single source of truth (`VERSION` file + `scripts/bump-version.sh`)
+- Conventional Commits validados automáticamente (commitlint + husky)
+- standard-version para bumps automáticos de versión
+- Pre-release support (alpha, beta, rc) en CI/CD
+- Annotated tags para releases oficiales
+
+### 📝 Documentación
+- `CONTRIBUTING.md` con guía completa de contribución y versionado
+- README sincronizado con estado actual del proyecto
+- OpenAPI spec actualizada a v1.1.0
+- CHANGELOG.md restaurado en develop
+
+### 🐛 Correcciones
+- Version drift corregido: pom.xml y package.json sincronizados a 1.1.0
+- Artifact naming del JAR ahora refleja la versión real
+- Pre-releases ya no sobreescriben tag Docker `:latest`
+
+---
 ## v1.1.0 (2026-06-29)
 
 ### ✨ Features
