@@ -56,7 +56,7 @@ export const api = {
       request<{ id: string; companyId: string; balance: number; currency: string }>(`/wallets/${id}`, { token }),
     transactions: (token: string, id: string, page = 0, size = 20) =>
       request<{
-        content: Array<{ id: string; fromCardId: string; toWalletId: string; amount: number; description: string; type: string; status: string; createdAt: string }>;
+        content: Array<{ id: string; fromCardId: string; toWalletId: string; amount: number; description: string; type: string; status: string; originalAmount: number | null; originalCurrency: string | null; conversionRate: number | null; createdAt: string }>;
         totalElements: number; totalPages: number; number: number;
       }>(`/wallets/${id}/transactions?page=${page}&size=${size}`, { token }),
   },
@@ -81,7 +81,7 @@ export const api = {
       request<{ id: string; status: string }>("/transactions", { method: "POST", body: JSON.stringify(data), token }),
     list: (token: string, page = 0, size = 20) =>
       request<{
-        content: Array<{ id: string; fromCardId: string; toWalletId: string; amount: number; description: string; type: string; status: string; createdAt: string }>;
+        content: Array<{ id: string; fromCardId: string; toWalletId: string; amount: number; description: string; type: string; status: string; originalAmount: number | null; originalCurrency: string | null; conversionRate: number | null; createdAt: string }>;
         totalElements: number; totalPages: number; number: number;
       }>(`/transactions?page=${page}&size=${size}`, { token }),
   },

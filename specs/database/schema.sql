@@ -47,14 +47,17 @@ CREATE TABLE IF NOT EXISTS cards (
 );
 
 CREATE TABLE IF NOT EXISTS transactions (
-    id            TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-    from_card_id  TEXT,
-    to_wallet_id  TEXT NOT NULL,
-    amount        REAL NOT NULL CHECK (amount > 0),
-    description   TEXT,
-    type          TEXT NOT NULL DEFAULT 'PAYMENT' CHECK (type IN ('PAYMENT', 'TOPUP', 'REFUND')),
-    status        TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'COMPLETED', 'FAILED')),
-    created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+    id                TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+    from_card_id      TEXT,
+    to_wallet_id      TEXT NOT NULL,
+    amount            REAL NOT NULL CHECK (amount > 0),
+    description       TEXT,
+    type              TEXT NOT NULL DEFAULT 'PAYMENT' CHECK (type IN ('PAYMENT', 'TOPUP', 'REFUND')),
+    status            TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'COMPLETED', 'FAILED')),
+    original_amount   REAL,
+    original_currency TEXT,
+    conversion_rate   REAL,
+    created_at        TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (from_card_id) REFERENCES cards(id) ON DELETE SET NULL,
     FOREIGN KEY (to_wallet_id) REFERENCES wallets(id) ON DELETE CASCADE
 );

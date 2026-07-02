@@ -21,7 +21,6 @@
 - Pre-releases ya no sobreescriben tag Docker `:latest`
 
 ---
-
 ## v1.1.0 (2026-06-29)
 
 ### ✨ Features
