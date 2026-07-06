@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ $# -ne 1 ]; then
-  echo "Usage: $0 <new-version>"
-  echo "Example: $0 1.2.0"
-  exit 1
-fi
-
-NEW_VERSION="$1"
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+if [ $# -ge 1 ]; then
+  NEW_VERSION="$1"
+else
+  # Called from standard-version postbump without args; read from root package.json
+  NEW_VERSION=$(node -p "require('$ROOT_DIR/package.json').version")
+fi
 VERSION_FILE="$ROOT_DIR/VERSION"
 
 if [[ ! "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
