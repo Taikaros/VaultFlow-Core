@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:vaultflow.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+vaultflow:
+  jwt:
+    secret: VaultFlow-Core-SecretKey-2026-MustBeAtLeast256BitsLong!!
+    expiration: 86400000

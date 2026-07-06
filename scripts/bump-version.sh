@@ -19,10 +19,10 @@ fi
 echo "$NEW_VERSION" > "$VERSION_FILE"
 echo "✓ Updated VERSION → $NEW_VERSION"
 
-# Update pom.xml
+# Update pom.xml (artifactId + version block, not parent or dependencies)
 POM="$ROOT_DIR/backend/pom.xml"
 if [ -f "$POM" ]; then
-  sed -i "s|<version>[0-9]*\.[0-9]*\.[0-9]*[^<]*</version>|<version>$NEW_VERSION</version>|" "$POM"
+  sed -i "/<artifactId>vaultflow-core<\/artifactId>/,/<version>/s|<version>[0-9]*\.[0-9]*\.[0-9]*[^<]*</version>|<version>$NEW_VERSION</version>|" "$POM"
   echo "✓ Updated backend/pom.xml → $NEW_VERSION"
 fi
 

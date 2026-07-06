@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: vaultflow-api
+    env: java
+    region: ohio
+    plan: free
+    buildCommand: mvn package -DskipTests -B
+    startCommand: java -jar target/*.jar
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: VAULTFLOW_JWT_SECRET
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://vaultflow.netlify.app
+      - key: JDBC_DATABASE_URL
+        fromDatabase:
+          name: vaultflow-db
+          property: connectionString
+
+databases:
+  - name: vaultflow-db
+    plan: free
+    region: ohio

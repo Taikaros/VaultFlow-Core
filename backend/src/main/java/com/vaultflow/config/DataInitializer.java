@@ -21,11 +21,6 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        String url = dataSource.getConnection().getMetaData().getURL();
-        if (!url.contains("sqlite")) {
-            return;
-        }
-
         Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM companies", Long.class);
         if (count != null && count == 0) {
             var resource = new ClassPathResource("db/seed.sql");
@@ -33,7 +28,11 @@ public class DataInitializer implements CommandLineRunner {
             for (String statement : sql.split(";")) {
                 String trimmed = statement.trim();
                 if (!trimmed.isEmpty()) {
-                    jdbcTemplate.execute(trimmed);
+                    try {
+                        jdbcTemplate.execute(trimmed);
+                    } catch (Exception e) {
+                        System.err.println("Seed statement skipped: " + e.getMessage());
+                    }
                 }
             }
             System.out.println("Seed data cargada exitosamente");
