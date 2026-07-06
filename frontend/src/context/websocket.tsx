@@ -1,69 +1,57 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { useAuth } from "./auth";
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-interface Notification {
-  type: string;
-  message: string;
-  data: Record<string, unknown>;
-}
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws';
 
 interface WebSocketContextType {
-  lastNotification: Notification | null;
+  connected: boolean;
+  subscribe: (destination: string, callback: (data: unknown) => void) => () => void;
+  send: (destination: string, body: unknown) => void;
 }
 
-const WebSocketContext = createContext<WebSocketContextType>({ lastNotification: null });
-
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:8080/ws";
+const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
-  const { auth } = useAuth();
-  const [lastNotification, setLastNotification] = useState<Notification | null>(null);
+  const [client] = useState(() => new Client({
+    webSocketFactory: () => new SockJS(WS_URL),
+    connectHeaders: {},
+    debug: process.env.NODE_ENV === 'development' ? console.log : undefined,
+    reconnectDelay: 5000,
+    heartbeatIncoming: 4000,
+    heartbeatOutgoing: 4000,
+  }));
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    if (!auth) return;
-    const companyId = auth.company.id;
+    client.onConnect = () => setConnected(true);
+    client.onDisconnect = () => setConnected(false);
+    client.activate();
+    return () => { client.deactivate(); };
+  }, [client]);
 
-    let reconnectTimeout: ReturnType<typeof setTimeout>;
-    let stompClient: WebSocket | null = null;
+  const subscribe = (destination: string, callback: (data: unknown) => void) => {
+    const sub = client.subscribe(destination, message => {
+      callback(JSON.parse(message.body));
+    });
+    return () => sub.unsubscribe();
+  };
 
-    function connect() {
-      const ws = new WebSocket(WS_URL);
-      stompClient = ws;
-
-      ws.onopen = () => {
-        const subscribeMsg = JSON.stringify({ destination: `/topic/company/${companyId}` });
-        ws.send(JSON.stringify({ command: "SUBSCRIBE", ...JSON.parse(subscribeMsg) }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const notification: Notification = JSON.parse(event.data);
-          setLastNotification(notification);
-        } catch { /* ignore parse errors */ }
-      };
-
-      ws.onclose = () => {
-        reconnectTimeout = setTimeout(connect, 3000);
-      };
-    }
-
-    connect();
-
-    return () => {
-      clearTimeout(reconnectTimeout);
-      stompClient?.close();
-    };
-  }, [auth]);
+  const send = (destination: string, body: unknown) => {
+    client.publish({ destination, body: JSON.stringify(body) });
+  };
 
   return (
-    <WebSocketContext.Provider value={{ lastNotification }}>
+    <WebSocketContext.Provider value={{ connected, subscribe, send }}>
       {children}
     </WebSocketContext.Provider>
   );
 }
 
-export function useWebSocket() {
-  return useContext(WebSocketContext);
-}
+export const useWebSocket = () => {
+  const ctx = useContext(WebSocketContext);
+  if (!ctx) throw new Error('useWebSocket must be used within WebSocketProvider');
+  return ctx;
+};
