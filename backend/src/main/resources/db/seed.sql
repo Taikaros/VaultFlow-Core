@@ -4,7 +4,7 @@
 
 INSERT INTO companies (id, name, tax_id, email, password, created_at, updated_at)
 VALUES (gen_random_uuid()::text, 'TechCorp Demo', 'TECH-2026-001', 'admin@techcorp.com',
-        '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', NOW(), NOW())
+        '$2b$10$MLWItGcXOwPfszldHtGd9uYK1Vv0OnqE8Ew/BjlPxHq03o7xpU4Qm', NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 INSERT INTO wallets (id, company_id, balance, currency, created_at, updated_at)
