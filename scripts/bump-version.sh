@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-
-if [ $# -ge 1 ]; then
-  NEW_VERSION="$1"
-else
-  # Called from standard-version postbump without args; read from root package.json
-  NEW_VERSION=$(node -p "require('$ROOT_DIR/package.json').version")
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <new-version>"
+  echo "Example: $0 1.2.0"
+  exit 1
 fi
+
+NEW_VERSION="$1"
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 VERSION_FILE="$ROOT_DIR/VERSION"
 
 if [[ ! "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
@@ -19,10 +19,10 @@ fi
 echo "$NEW_VERSION" > "$VERSION_FILE"
 echo "✓ Updated VERSION → $NEW_VERSION"
 
-# Update pom.xml (artifactId + version block, not parent or dependencies)
+# Update pom.xml
 POM="$ROOT_DIR/backend/pom.xml"
 if [ -f "$POM" ]; then
-  sed -i "/<artifactId>vaultflow-core<\/artifactId>/,/<version>/s|<version>[0-9]*\.[0-9]*\.[0-9]*[^<]*</version>|<version>$NEW_VERSION</version>|" "$POM"
+  sed -i "s|<version>[0-9]*\.[0-9]*\.[0-9]*[^<]*</version>|<version>$NEW_VERSION</version>|" "$POM"
   echo "✓ Updated backend/pom.xml → $NEW_VERSION"
 fi
 

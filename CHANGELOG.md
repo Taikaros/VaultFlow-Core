@@ -1,26 +1,5 @@
 # Changelog
 
-## v2.0.0 (2026-07-06)
-
-### ✨ Features
-- PostgreSQL support with production profile (`application-prod.yml`)
-- Static export configuration for Next.js (Netlify-ready)
-- STOMP/SockJS WebSocket client for production
-- Render infrastructure as code (`render.yaml`)
-- Netlify deployment configuration (`netlify.toml`)
-- CORS configurable via environment variable
-
-### ⚙️ Infraestructura
-- Multi-profile Spring Boot (dev/prod)
-- PostgreSQL driver with HikariCP connection pooling
-- Health check endpoint (`/actuator/health`)
-- Automatic deployment via Render + Netlify
-
-### 📝 Documentación
-- Deployment plan en `.opencode/DEPLOYMENT_PLAN.md`
-
----
-
 ## v1.1.1 (2026-07-02)
 
 ### 🏗️ Infraestructura
