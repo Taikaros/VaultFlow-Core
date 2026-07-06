@@ -32,8 +32,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!auth) return;
-    api.dashboard.metrics(auth.token).then(setMetrics);
-    api.transactions.list(auth.token, 0, 10).then((res) => setTransactions(res.content));
+    api.dashboard.metrics(auth.token)
+      .then(setMetrics)
+      .catch((err) => console.error("Error al cargar métricas:", err));
+    api.transactions.list(auth.token, 0, 10)
+      .then((res) => setTransactions(res.content))
+      .catch((err) => console.error("Error al cargar transacciones:", err));
   }, [auth]);
 
   const txPieData = metrics ? [

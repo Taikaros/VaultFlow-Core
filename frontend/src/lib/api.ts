@@ -15,7 +15,15 @@ async function request<T>(path: string, options: FetchOptions = {}): Promise<T> 
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, { ...fetchOptions, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...fetchOptions, headers });
+  } catch (err) {
+    console.error("Error de red al llamar a la API:", err);
+    throw new Error(
+      "No se pudo conectar con el servidor. Verifica que el backend esté corriendo en http://localhost:8080"
+    );
+  }
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Error desconocido" }));
