@@ -4,6 +4,8 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  NEXT_PUBLIC_API_URL = "https://vaultflow-core.onrender.com/api/v1"
+  NEXT_PUBLIC_WS_URL = "https://vaultflow-core.onrender.com/ws"
 
 [[redirects]]
   from = "/*"
